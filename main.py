@@ -7,6 +7,7 @@ import time
 
 cascade_path = 'cascades/haarcascade_frontalface_default.xml'
 face_cascade = cv2.CascadeClassifier(cascade_path)
+time_of_last_image = 0
 
 def get_cascades(directory='cascades'):
     cascades = []
@@ -15,22 +16,27 @@ def get_cascades(directory='cascades'):
     return cascades
 
 
-def save(frame, face):
+def save_frame(frame, face):
     if not face:
         return
 
-    x, y, w, h = face
-    cv2.imwrite('last_face.png', frame[x:x+w, y:y+h])
+    global time_of_last_image
+
+    now = time.time()
+    if now - time_of_last_image > 3.0:
+        x, y, w, h = face
+        cv2.imwrite('last_face.png', frame[y:y+h, x:x+w])
+        time_of_last_image = now
 
 
-def show(frame, face, rect_scale=1.0):
+def show(frame, face, rect_scale=1.0, save=False):
     if face is not None:
         x, y, w, h = face
 
         margin_w = (w * rect_scale - w) / 2
         margin_h = (h * rect_scale - h)
 
-        offset_w = 0
+        offset_w = margin_w / 2
         offset_h = margin_h / 2
 
         x = max(0, int(x - margin_w + offset_w))
@@ -38,7 +44,11 @@ def show(frame, face, rect_scale=1.0):
         w = min(frame.shape[1], int(w + margin_w))
         h = min(frame.shape[0], int(h + margin_h))
 
+        if save:
+            save_frame(frame, (x, y, w, h))
+
         cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
+
     cv2.imshow("Face found", frame)
 
 
@@ -71,7 +81,7 @@ def main():
     try:
         for frame in capture(video_capture):
             face = process(frame)
-            show(frame, face, rect_scale=1.6)
+            show(frame, face, rect_scale=1.6, save=True)
 
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break

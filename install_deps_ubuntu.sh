@@ -1,2 +1,2 @@
 #!/usr/bin/env bash
-apt-get install python-numpy python-opencv
+apt-get install python-numpy python-opencv python-requests
