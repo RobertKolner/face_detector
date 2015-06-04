@@ -1,5 +1,7 @@
 #!/usr/bin/env python
+import argparse
 import cv2
+import logging
 import os
 import sys
 import time
@@ -7,6 +9,7 @@ import time
 
 cascade_path = 'cascades/haarcascade_frontalface_default.xml'
 face_cascade = cv2.CascadeClassifier(cascade_path)
+logger = logging.getLogger(__name__)
 time_of_last_image = 0
 
 def get_cascades(directory='cascades'):
@@ -29,7 +32,7 @@ def save_frame(frame, face):
         time_of_last_image = now
 
 
-def show(frame, face, rect_scale=1.0, save=False):
+def show(frame, face, rect_scale=1.0, save_images=False):
     if face is not None:
         x, y, w, h = face
 
@@ -44,7 +47,7 @@ def show(frame, face, rect_scale=1.0, save=False):
         w = min(frame.shape[1], int(w + margin_w))
         h = min(frame.shape[0], int(h + margin_h))
 
-        if save:
+        if save_images:
             save_frame(frame, (x, y, w, h))
 
         cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
@@ -75,18 +78,18 @@ def capture(video_capture):
         yield frame
 
 
-def main():
+def main(save_images=False):
     video_capture = cv2.VideoCapture(0)
 
     try:
         for frame in capture(video_capture):
             face = process(frame)
-            show(frame, face, rect_scale=1.6, save=True)
+            show(frame, face, rect_scale=1.6, save_images=save_images)
 
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
     except KeyboardInterrupt:
-        pass
+        logger.info('Stopping the video capturing.')
 
     # When everything is done, release the capture
     video_capture.release()
@@ -94,4 +97,8 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description="Capture faces of people")
+    parser.add_argument('-s', '--save', dest='save_images', action='store_true', default=False)
+    args = parser.parse_args()
+
+    main(save_images=args.save_images)
